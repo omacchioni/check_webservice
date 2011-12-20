@@ -57,13 +57,13 @@ def array_to_dict(arr):
 			dict[k] = v
 	return dict
 
-def send_request(server, path, verb, timeout, content={}, headers={}):
+def send_request(schema, server, path, verb, timeout, content={}, headers={}):
 
 	# No need for keeping the connection alive.
 	headers['Connection'] = 'Close'
 	headers['User-Agent'] = 'Nagios Webservice Tester Plugin'
 
-	url = 'http://' + server + ":" + str(port) + path
+	url = '%s://%s:%d%s' % (schema, server, port, path)
 	if verbose: print "URL: " + url + "\n"
 
 	if verb.upper() == 'POST':
@@ -115,6 +115,7 @@ ws       = config.get('webservice', {})
 request  = ws.get('request', {})
 response = ws.get('response', {})
 
+schema  = request.get('schema', '')
 server  = request.get('server', '')
 path    = request.get('path', '')
 port    = request.get('port', '')
@@ -130,8 +131,13 @@ match_all = response.get('match_all', '')
 if verb.upper() == 'POST' and len(content) == 0:
 	sys.exit("You want a POST request, but provided no Content to post.")
 
+AUTHORIZED_SCHEMAS = ('http', 'https')
+
+if schema not in AUTHORIZED_SCHEMAS:
+    sys.exit("schema must be on of %s", ("".join(AUTHORIZED_SCHEMAS), ))
+
 # Send the actual request.
-data = send_request(server, path, verb, timeout, content, headers)
+data = send_request(schema, server, path, verb, timeout, content, headers)
 
 request_headers  = data.get('request_headers', '')
 response_headers = data.get('response_headers', '')
